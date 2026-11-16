@@ -31,7 +31,9 @@ const { theme, problems } = makeColors({
 
 const VISUAL: ThemeSetArgs = {
   colors: theme,
-  backdrop: { scene: NOME, glass: { blur: 8, tint: '#0a0905', opacity: 0.55 } },
+  // Sem desfoque: desfocar um fundo animado obriga a refazer o desfoque a cada
+  // quadro. O véu mais denso compensa a leitura sobre a chuva.
+  backdrop: { scene: NOME, glass: { blur: 0, tint: '#0a0905', opacity: 0.72 } },
 }
 
 export const register: Register = on => {

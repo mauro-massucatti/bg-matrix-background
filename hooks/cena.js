@@ -30,6 +30,12 @@ function sorteador(semente        )               {
   }
 }
 
+// Coluna ou centelha inteira dentro da faixa central (30% a 70% da largura),
+// onde a máscara lateral da tela deitada é preto puro.
+function escondidaNoMeio(x        )          {
+  return x >= LARGURA * 0.3 && x + TAMANHO <= LARGURA * 0.7
+}
+
 function montar()         {
   const r = sorteador(20261116)
   const sorteio = (min        , max        ) => min + r() * (max - min)
@@ -54,13 +60,16 @@ function montar()         {
   let n = 0
 
   for (let x = 6; x < LARGURA; x += PASSO_X) {
-    const camadas = r() < 0.35 ? 2 : 1
+    const camadas = r() < 0.25 ? 2 : 1
+    // No meio da tela deitada a máscara apaga tudo: a coluna dali só existe
+    // na tela em pé, e na deitada nem é desenhada (classe m).
+    const meio = escondidaNoMeio(x) ? ' m' : ''
 
     for (let c = 0; c < camadas; c++) {
       const d = sorteio(7, 17)
       const a = (-sorteio(0, 17)).toFixed(2)
       const v = Math.floor(r() * trilhas.length)
-      const fundo = c === 1 ? ' f' : ''
+      const fundo = (c === 1 ? ' f' : '') + meio
       const k = `k${n++}`
       ritmos.push(
         `.${k}{animation-duration:${d.toFixed(2)}s;animation-delay:${a}s}` +
@@ -78,23 +87,28 @@ function montar()         {
   // Centelhas: caracteres soltos que acendem e apagam, como se trocassem.
   const centelhas = []
 
-  for (let i = 0; i < 70; i++) {
+  for (let i = 0; i < 40; i++) {
     const x = 6 + Math.floor(r() * (LARGURA / PASSO_X)) * PASSO_X
     const y = Math.floor(r() * (ALTURA / PASSO_Y)) * PASSO_Y
     const d = sorteio(1.6, 4.5).toFixed(2)
     const a = (-sorteio(0, 4.5)).toFixed(2)
+    // Abaixo de 84% da altura as duas máscaras já apagaram tudo.
+    if (y > ALTURA * 0.84) continue
     const k = `k${n++}`
+    const meio = escondidaNoMeio(x) ? ' m' : ''
     ritmos.push(`.${k}{animation-duration:${d}s;animation-delay:${a}s}`)
-    centelhas.push(`<text x="${x}" y="${y}" class="${k}">${glifo()}</text>`)
+    centelhas.push(`<text x="${x}" y="${y}" class="${k}${meio}">${glifo()}</text>`)
   }
 
   const estilo = `
 text{font-family:ui-monospace,Menlo,Monaco,monospace;font-size:${TAMANHO}px}
 .c rect{fill:transparent;pointer-events:all}
-.s{fill:url(#trilha);animation:cair 12s linear 0s infinite;will-change:transform}
+.s{fill:url(#trilha);animation:cair 12s linear 0s infinite;animation-play-state:paused}
 .f .s{opacity:.38;font-size:${TAMANHO - 5}px}
 .c:hover .s{fill:url(#quente);opacity:1}
-.centelhas text{fill:#e9c45a;opacity:0;animation:piscar 3s steps(1,end) 0s infinite}
+.centelhas text{fill:#e9c45a;opacity:0;animation:piscar 3s steps(1,end) 0s infinite;animation-play-state:paused}
+.ativo .s,.ativo .centelhas text{animation-play-state:running}
+.m{display:none}
 .chuva{opacity:.62;transition:opacity 1.2s}
 .ativo .chuva{opacity:1}
 ${ritmos.join('\n')}
@@ -102,8 +116,8 @@ ${ritmos.join('\n')}
 @keyframes piscar{0%{opacity:0}62%{opacity:.85}70%{opacity:.25}78%{opacity:0}}
 .h{mask:url(#mLados)}
 .v{mask:url(#mPe)}
-@media (max-aspect-ratio:1/1){.h{mask:none}.v{mask:url(#mTopo)}}
-@media (prefers-reduced-motion:reduce){.s,.centelhas text{animation-play-state:paused}}
+@media (max-aspect-ratio:1/1){.h{mask:none}.v{mask:url(#mTopo)}.m{display:inline}}
+@media (prefers-reduced-motion:reduce){.ativo .s,.ativo .centelhas text{animation-play-state:paused}}
 `
 
   return (
